@@ -85,7 +85,7 @@ def parse_pdf_filelike(file_like):
     with pdfplumber.open(file_like) as pdf:
         text = "\n".join([p.extract_text() or "" for p in pdf.pages])
     company = identify_company(text)
-    if company == "Valley Fresh (Freshmax Australia)":
+    if company == "FRESHMAX NATIONAL PTY LTD":
         return company, parse_valleyfresh(text)
     elif company == "De Luca Banana Marketing":
         return company, parse_deluca(text)

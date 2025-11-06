@@ -31,7 +31,7 @@ if uploaded_pdfs and uploaded_excel and uploaded_maps:
                               invoice_date=invoice_date, charges=charges,
                               pdf_trays=invoice_trays)  # keep pdf_trays if we extracted a number
             failed_rows.append({"Company": company, "Invoice No.": invoice_no, "PO No.": cust_po,
-                                "Reason": f"❌ Could not read PO from {pdf.name}", "Key": key})
+                                "Reason": f"Could not read PO from {pdf.name}", "Key": key})
             continue
 
         grower_split, excel_trays = get_grower_split(uploaded_excel, cust_po, company)
@@ -43,7 +43,7 @@ if uploaded_pdfs and uploaded_excel and uploaded_maps:
                               invoice_date=invoice_date, charges=charges,
                               pdf_trays=invoice_trays, cons_trays=excel_trays)
             failed_rows.append({"Company": company, "Invoice No.": invoice_no, "PO No.": cust_po,
-                                "Reason": f"⚠️ No growers found in Consignment Summary for PO {cust_po}",
+                                "Reason": f"No growers found in Consignment Summary for PO {cust_po}",
                                 "Key": key})
             continue
 
@@ -57,7 +57,7 @@ if uploaded_pdfs and uploaded_excel and uploaded_maps:
                               invoice_date=invoice_date, charges=charges,
                               grower_split=grower_split, cons_trays=excel_trays)
             failed_rows.append({"Company": company, "Invoice No.": invoice_no, "PO No.": cust_po,
-                                "Reason": "❌ Could not determine tray count on the invoice", "Key": key})
+                                "Reason": "Could not determine tray count on the invoice", "Key": key})
             continue
 
         # Fail 4: consignment trays missing
@@ -67,7 +67,7 @@ if uploaded_pdfs and uploaded_excel and uploaded_maps:
                               invoice_date=invoice_date, charges=charges,
                               pdf_trays=invoice_trays, cons_trays=excel_trays)
             failed_rows.append({"Company": company, "Invoice No.": invoice_no, "PO No.": cust_po,
-                                "Reason": "❌ Consignment Summary tray total is missing/zero", "Key": key})
+                                "Reason": "Consignment Summary tray total is missing/zero", "Key": key})
             continue
 
         # Fail 5: tray mismatch
@@ -77,7 +77,7 @@ if uploaded_pdfs and uploaded_excel and uploaded_maps:
                               invoice_date=invoice_date, charges=charges,
                               pdf_trays=invoice_trays, cons_trays=excel_trays)
             failed_rows.append({"Company": company, "Invoice No.": invoice_no, "PO No.": cust_po,
-                                "Reason": f"🚨 Tray mismatch: Invoice has {int(round(invoice_trays))}, "
+                                "Reason": f"Tray mismatch: Invoice has {int(round(invoice_trays))}, "
                                           f"Consignment has {int(round(excel_trays))}",
                                 "Key": key})
             continue
@@ -99,7 +99,7 @@ if uploaded_pdfs and uploaded_excel and uploaded_maps:
     if all_rows:
         df_out = pd.DataFrame(all_rows)
         df_export = group_with_blank_lines(df_out, "Supplier Invoice No.")
-        st.subheader("✅ Processed Invoices")
+        st.subheader("Processed Invoices")
         st.dataframe(df_export)
         txt = to_tab_delimited_with_header(df_export)
         st.download_button("Download MYOB Import File", txt, "myob_import.txt", "text/plain")
@@ -108,11 +108,11 @@ if uploaded_pdfs and uploaded_excel and uploaded_maps:
 
     # -------------------- Dynamic single fix panel --------------------
     if failed_rows:
-        st.subheader("⚠️ Failed Invoices (with reasons)")
+        st.subheader("Failed Invoices (with reasons)")
         failed_df = pd.DataFrame(failed_rows)
         st.dataframe(failed_df)
 
-        st.markdown("### 🛠️ Fix & Reprocess (dynamic form)")
+        st.markdown("### Fix & Reprocess (dynamic form)")
         # Choose any failed invoice
         labels = {
             f"{r['Company']} | Inv {r['Invoice No.']} | PO {r['PO No.']} — {r['Reason']}": r["Key"]
@@ -152,7 +152,7 @@ if uploaded_pdfs and uploaded_excel and uploaded_maps:
                                 else:
                                     df_fix = pd.DataFrame(rows)
                                     df_fix_exp = group_with_blank_lines(df_fix, "Supplier Invoice No.")
-                                    st.subheader("✅ Reprocessed Invoice")
+                                    st.subheader("Reprocessed Invoice")
                                     st.dataframe(df_fix_exp)
                                     txt2 = to_tab_delimited_with_header(df_fix_exp)
                                     st.download_button("Download MYOB Import (This Invoice Only)",
@@ -177,7 +177,7 @@ if uploaded_pdfs and uploaded_excel and uploaded_maps:
                         else:
                             df_fix = pd.DataFrame(rows)
                             df_fix_exp = group_with_blank_lines(df_fix, "Supplier Invoice No.")
-                            st.subheader("✅ Reprocessed Invoice")
+                            st.subheader("Reprocessed Invoice")
                             st.dataframe(df_fix_exp)
                             txt2 = to_tab_delimited_with_header(df_fix_exp)
                             st.download_button("Download MYOB Import (This Invoice Only)",
@@ -224,7 +224,7 @@ if uploaded_pdfs and uploaded_excel and uploaded_maps:
                             else:
                                 df_fix_ng = pd.DataFrame(rows_ng)
                                 df_fix_ng_exp = group_with_blank_lines(df_fix_ng, "Supplier Invoice No.")
-                                st.subheader("✅ Reprocessed Invoice (Manual Split)")
+                                st.subheader("Reprocessed Invoice (Manual Split)")
                                 st.dataframe(df_fix_ng_exp)
                                 txt_ng = to_tab_delimited_with_header(df_fix_ng_exp)
                                 st.download_button("Download MYOB Import (This Invoice Only)",
