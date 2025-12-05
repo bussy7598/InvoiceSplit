@@ -10,7 +10,7 @@ def identify_company(text: str) -> str:
             return company
     return "Unknown"
 
-def parse_valleyfresh_v2(text: str):
+def parse_valleyfresh(text: str):
     inv = re.search(r"TAX INVOICE\s+(\d+)", text, re.IGNORECASE)
     invoice_no = inv.group(1) if inv else None
 
@@ -20,42 +20,48 @@ def parse_valleyfresh_v2(text: str):
     date_m = re.search(r"Date\s*[: ]\s*(\d{1,2}/\d{1,2}/\d{4})", text, re.IGNORECASE)
     invoice_date = date_m.group(1) if date_m else None
 
+    lines = text.splitlines()
+
     total_trays = 0
-    logistics_total = 0
-    freight_total = 0
+    charges = {"Logistics": 0.0, "Freight": 0.0}
 
-    for line in text.splitlines():
+    i = 0
+    while i < len(lines) - 1:
+        line = lines[i].strip()
+        next_line = lines[i + 1].strip()
+
         parts = line.split()
-        if len(parts) < 5:
-            continue  # can't be a product line
 
-        # Check if last 4 tokens are numeric (qty, price, tax, amount)
-        try:
-            qty = float(parts[-4])
-            price = float(parts[-3])
-            tax = float(parts[-2])
-            amount = float(parts[-1])
+        # Check if numeric tail is present on line
+        if len(parts) >= 5:
+            try:
+                qty   = float(parts[-4])
+                price = float(parts[-3])
+                tax   = float(parts[-2])
+                amt   = float(parts[-1])
 
-            # Now decide if it's logistics, freight, or product
-            up = line.upper()
-            if "FREIGHT" in up:
-                freight_total += amount
-            elif "LOGISTIC" in up:
-                logistics_total += amount
-                total_trays += int(round(qty))
-            else:
-                # Product line
-                total_trays += int(round(qty))
+                up = line.upper()
 
-        except ValueError:
-            # Not a line with numeric tail → ignore
-            pass
+                # Freight
+                if "FREIGHT" in up:
+                    charges["Freight"] += amt
 
-    charges = {}
-    if logistics_total:
-        charges["Logistics"] = round(logistics_total, 2)
-    if freight_total:
-        charges["Freight"] = round(freight_total, 2)
+                # Logistics (this line ALSO contains the product qty!)
+                elif "LOGISTIC" in up:
+                    charges["Logistics"] += amt
+
+                    # Product code is on NEXT line → treat as product
+                    total_trays += int(round(qty))
+
+                # Unexpected numeric-looking line → ignore
+
+            except:
+                pass
+
+        i += 1
+
+    # Clean empty charges
+    charges = {k: v for k, v in charges.items() if v}
 
     return invoice_no, cust_po, invoice_date, charges, total_trays
 
@@ -126,7 +132,7 @@ def parse_pdf_filelike(file_like):
         text = "\n".join([p.extract_text() or "" for p in pdf.pages])
     company = identify_company(text)
     if company == "FRESHMAX NATIONAL PTY LTD":
-        return company, parse_valleyfresh_v2(text)
+        return company, parse_valleyfresh(text)
     elif company == "De Luca Banana Marketing":
         return company, parse_deluca(text)
     elif company == "Bache Bros Pty Ltd":
