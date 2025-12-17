@@ -106,26 +106,58 @@ def parse_deluca(text: str):
     return invoice_no, cust_po, invoice_date, charges, total_trays
 
 def parse_bache(text: str):
-    inv = re.search(r"Invoice Number\s+([A-Za-z0-9\-]+)", text, re.IGNORECASE)
+    # ---------- Invoice number ----------
+    inv = re.search(
+        r"Invoice Number\s*\n\s*([A-Z]{2,5}-\d+)",
+        text,
+        re.IGNORECASE
+    )
     invoice_no = inv.group(1) if inv else None
-    po = re.search(r"Reference\s+([A-Za-z0-9\-]+)", text, re.IGNORECASE)
-    cust_po = po.group(1).split("-")[0] if po else None
-    date_m = re.search(r"Invoice Date\s+(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})", text, re.IGNORECASE)
+
+    # ---------- PO / Reference ----------
+    po = re.search(
+        r"Reference\s*\n\s*([A-Za-z0-9\-]+)",
+        text,
+        re.IGNORECASE
+    )
+    cust_po = po.group(1) if po else None
+
+    # ---------- Invoice date ----------
+    date_m = re.search(
+        r"Invoice Date\s*\n\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})",
+        text,
+        re.IGNORECASE
+    )
     invoice_date = date_m.group(1) if date_m else None
 
-    charges, total_trays = {}, 0
+    charges = {}
+    total_trays = 0
+
+    # ---------- Line items ----------
     for line in text.splitlines():
         up = line.upper()
+
+        # Product line (tray count + logistics)
         if "BERRY" in up and "BLUE" in up:
-            tail = [float(n) for n in re.findall(r"\d+(?:\.\d+)?", line)][-5:]
-            if len(tail) >= 5:
-                qty = tail[1]; amount = tail[-1]
-                total_trays = int(round(qty))
-                charges["Logistics"] = float(amount)
-        if "FREIGHT" in up:
             nums = [float(n) for n in re.findall(r"\d+(?:\.\d+)?", line)]
-            if nums: charges["Freight"] = float(nums[-1])
+
+            # Expected pattern (from your sample):
+            # Description | Qty | Unit Price | GST | Amount
+            if len(nums) >= 4:
+                qty = nums[0]
+                amount = nums[-1]
+
+                total_trays += int(round(qty))
+                charges["Logistics"] = charges.get("Logistics", 0) + amount
+
+        # Freight line
+        elif "FREIGHT" in up:
+            nums = [float(n) for n in re.findall(r"\d+(?:\.\d+)?", line)]
+            if nums:
+                charges["Freight"] = charges.get("Freight", 0) + nums[-1]
+
     return invoice_no, cust_po, invoice_date, charges, total_trays
+
 
 def parse_pdf_filelike(file_like):
     with pdfplumber.open(file_like) as pdf:
