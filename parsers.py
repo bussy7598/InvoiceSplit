@@ -118,6 +118,17 @@ def parse_deluca(text: str):
 
     return invoice_no, cust_po, invoice_date, charges, total_trays
 
+def extract_bache_invoice_date(text: str):
+    idx = text.lower().find("invoice date")
+    if idx == -1:
+        return None
+
+    # Look shortly after "Invoice Date" to avoid Due Date
+    tail = text[idx:idx + 120]
+
+    m = re.search(r"\d{1,2}\s+[A-Za-z]{3}\s+\d{4}", tail)
+    return m.group(0) if m else None
+
 def parse_bache(text: str):
     # Normalise PDF whitespace FIRST
     text = text.replace("\xa0", " ")
@@ -131,12 +142,7 @@ def parse_bache(text: str):
     invoice_no = inv.group(1) if inv else None
 
     # ---------- Invoice date (SAME STRUCTURE) ----------
-    date_m = re.search(
-        r"Invoice Date\s*(?:\n\s*)?(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})",
-        text,
-        re.IGNORECASE
-    )
-    invoice_date = date_m.group(1) if date_m else None
+    invoice_date = extract_bache_invoice_date(text)
 
     # ---------- Reference / PO ----------
     po = re.search(
