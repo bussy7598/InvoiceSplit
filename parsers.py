@@ -155,9 +155,21 @@ def parse_bache(text: str):
         nums = re.findall(r"\d+(?:\.\d+)?", line)
         up = line.upper()
 
-        if "BERRY" in up and "BLUE" in up and len(nums) >= 6:
-            total_trays += int(round(float(nums[2])))
-            charges["Logistics"] = charges.get("Logistics", 0) + float(nums[-1])
+        if "BERRY" in up and "BLUE" in up:
+            nums = [float(n) for n in re.findall(r"\d+(?:\.\d+)?", line)]
+
+            # Heuristic for Bache:
+            # - tray qty is the largest integer >= 10 and <= 1000
+            # - amount is the largest value with decimals near the end
+            tray_candidates = [n for n in nums if n.is_integer() and 10 <= n <= 1000]
+
+            if tray_candidates:
+                trays = int(max(tray_candidates))
+                total_trays += trays
+
+                amount = nums[-1]
+                charges["Logistics"] = charges.get("Logistics", 0) + amount
+
 
         elif "FREIGHT" in up and nums:
             charges["Freight"] = charges.get("Freight", 0) + float(nums[-1])
