@@ -124,13 +124,14 @@ def parse_bache(text: str):
     cust_po = po.group(1) if po else None
 
     # ---------- Invoice date ----------
-    date_m = re.search(
-        r"Invoice Date\s*(?:\n\s*)?(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})",
-        text,
-        re.IGNORECASE
-    )
-    invoice_date = date_m.group(1) if date_m else None
+    invoice_date = None
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
 
+    for i, line in enumerate(lines):
+        if line.upper() == "INVOICE DATE":
+            if i + 1 < len(lines):
+                invoice_date = lines[i + 1]
+            break
 
     charges = {}
     total_trays = 0
