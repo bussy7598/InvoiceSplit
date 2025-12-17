@@ -108,10 +108,11 @@ def parse_deluca(text: str):
 def parse_bache(text: str):
     # ---------- Invoice number ----------
     inv = re.search(
-        r"Invoice Number\s*\n\s*([A-Z]{2,5}-\d+)",
+        r"Invoice Number\s*(?:\n\s*)?([A-Z]{2,5}-\d+)",
         text,
         re.IGNORECASE
     )
+
     invoice_no = inv.group(1) if inv else None
 
     # ---------- PO / Reference ----------
