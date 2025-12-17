@@ -119,26 +119,18 @@ def parse_deluca(text: str):
     return invoice_no, cust_po, invoice_date, charges, total_trays
 
 def parse_bache(text: str):
+    # Normalise PDF whitespace FIRST
     text = text.replace("\xa0", " ")
+
     # ---------- Invoice number ----------
     inv = re.search(
         r"Invoice Number\s*(?:\n\s*)?([A-Z]{2,5}-\d+)",
         text,
         re.IGNORECASE
     )
-
     invoice_no = inv.group(1) if inv else None
 
-    # ---------- PO / Reference ----------
-    po = re.search(
-        r"Reference\s*\n\s*([A-Za-z0-9\-]+)",
-        text,
-        re.IGNORECASE
-    )
-    cust_po = po.group(1) if po else None
-
-    # ---------- Invoice date ----------
-    # ---------- Invoice date (robust) ----------
+    # ---------- Invoice date (SAME STRUCTURE) ----------
     date_m = re.search(
         r"Invoice Date\s*(?:\n\s*)?(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})",
         text,
@@ -146,35 +138,33 @@ def parse_bache(text: str):
     )
     invoice_date = date_m.group(1) if date_m else None
 
-
+    # ---------- Reference / PO ----------
+    po = re.search(
+        r"Reference\s*(?:\n\s*)?([A-Za-z0-9\-]+)",
+        text,
+        re.IGNORECASE
+    )
+    cust_po = po.group(1) if po else None
 
     charges = {}
     total_trays = 0
 
-    # ---------- Line items ----------
     for line in text.splitlines():
         up = line.upper()
 
-        # Product line (tray count + logistics)
         if "BERRY" in up and "BLUE" in up:
             nums = [float(n) for n in re.findall(r"\d+(?:\.\d+)?", line)]
-
-        # Expected: [125, pack, TRAYS, unit_price, GST, amount]
             if len(nums) >= 6:
-                trays = int(round(nums[2]))      # <-- THIS IS THE KEY FIX
-                amount = nums[-1]
+                total_trays += int(round(nums[2]))
+                charges["Logistics"] = charges.get("Logistics", 0) + nums[-1]
 
-                total_trays += trays
-                charges["Logistics"] = charges.get("Logistics", 0) + amount
-
-
-        # Freight line
         elif "FREIGHT" in up:
             nums = [float(n) for n in re.findall(r"\d+(?:\.\d+)?", line)]
             if nums:
                 charges["Freight"] = charges.get("Freight", 0) + nums[-1]
 
     return invoice_no, cust_po, invoice_date, charges, total_trays
+
 
 
 def parse_pdf_filelike(file_like):
