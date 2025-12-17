@@ -138,14 +138,22 @@ def parse_bache(text: str):
     cust_po = po.group(1) if po else None
 
     # ---------- Invoice date ----------
+    # ---------- Invoice date (robust) ----------
     invoice_date = None
     lines = [l.strip() for l in text.splitlines() if l.strip()]
 
     for i, line in enumerate(lines):
-        if line.upper() == "INVOICE DATE":
-            if i + 1 < len(lines):
+        norm_line = line.upper().replace(":", "")
+        if norm_line.startswith("INVOICE") and "DATE" in norm_line:
+        # Try same line first (collapsed PDFs)
+            m = re.search(r"(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})", line)
+            if m:
+                invoice_date = m.group(1)
+        # Otherwise take next line
+            elif i + 1 < len(lines):
                 invoice_date = lines[i + 1]
             break
+
 
     charges = {}
     total_trays = 0
