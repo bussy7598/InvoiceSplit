@@ -4,11 +4,24 @@ from constants import COMPANIES
 from utils import norm
 
 def identify_company(text: str) -> str:
-    clean = text.replace(" ", "").replace("-", "")
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
+
+    for i, line in enumerate(lines):
+        if line.upper().startswith("VENDOR"):
+            # Look forward a few lines for ABN
+            for j in range(i, min(i + 10, len(lines))):
+                digits = re.sub(r"\D", "", lines[j])
+                if digits in COMPANIES:
+                    return COMPANIES[digits]
+
+    # Fallback: old method
+    clean = re.sub(r"\D", "", text)
     for abn, company in COMPANIES.items():
         if abn in clean:
             return company
+
     return "Unknown"
+
 
 def parse_valleyfresh(text: str):
     inv = re.search(r"TAX INVOICE\s+(\d+)", text, re.IGNORECASE)
