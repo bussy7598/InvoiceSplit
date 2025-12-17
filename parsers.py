@@ -119,6 +119,7 @@ def parse_deluca(text: str):
     return invoice_no, cust_po, invoice_date, charges, total_trays
 
 def parse_bache(text: str):
+    text = text.replace("\xa0", " ")
     # ---------- Invoice number ----------
     inv = re.search(
         r"Invoice Number\s*(?:\n\s*)?([A-Z]{2,5}-\d+)",
