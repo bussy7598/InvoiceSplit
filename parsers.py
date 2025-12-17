@@ -165,6 +165,7 @@ def parse_bache(text: str):
 
     return invoice_no, cust_po, invoice_date, charges, total_trays
 
+    print("PARSE_BACHE →", repr(invoice_date))
 
 
 def parse_pdf_filelike(file_like):
