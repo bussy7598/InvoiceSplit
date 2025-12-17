@@ -142,14 +142,14 @@ def parse_bache(text: str):
         if "BERRY" in up and "BLUE" in up:
             nums = [float(n) for n in re.findall(r"\d+(?:\.\d+)?", line)]
 
-            # Expected pattern (from your sample):
-            # Description | Qty | Unit Price | GST | Amount
-            if len(nums) >= 4:
-                qty = nums[0]
+        # Expected: [125, pack, TRAYS, unit_price, GST, amount]
+            if len(nums) >= 6:
+                trays = int(round(nums[2]))      # <-- THIS IS THE KEY FIX
                 amount = nums[-1]
 
-                total_trays += int(round(qty))
+                total_trays += trays
                 charges["Logistics"] = charges.get("Logistics", 0) + amount
+
 
         # Freight line
         elif "FREIGHT" in up:
